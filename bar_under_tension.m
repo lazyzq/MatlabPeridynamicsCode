@@ -120,47 +120,58 @@ end
 vel = zeros(totnode, 1);
 disp = zeros(totnode, 1);
 
-%% Initial condition
-for i = 1:ndivx
-    vel(i, 1) = 0.0;
-    disp(i, 1) = 0.001 * coord(i, 1);
+%% Stable mass vector computation
+dt = 1.0;
+% dt: Time interval
+
+massvec = zeros(totnode, 1);
+% massvec: massvector for adaptive dynamic relaxation
+
+for i = 1:totnode
+    massvec(i, 1) = 0.25 * dt * dt * (2.0 * area * delta) * bc / dx * 5.0;
 end
 
-%% Boundary condition - Zero displacement at x = 0
+%% Applied loading
+appres = 200.0e6;
+% appres: Applied pressure
+
+bforce = zeros(totnode, 1);
+% bforce: body load acting on a material point
+
+bforce(ndivx, 1) = appres / (dx);
+
+%% Boundary condition - Constrained region
 for i = (ndivx + 1):totnode
     vel(i, 1) = 0.0;
     disp(i, 1) = 0.0;
 end
 
 %% Time integration
-nt = 26000;
+nt = 10000;
 % nt: Total number of time step
-dt = 0.8 * sqrt(2.0*dens*dx/(2.0 * delta * area * bc));
-% dt: Time step size
-ntotrao = 20;
-% ntotrao: Number of terms in the summation for the analytical displacement calculation
-cwave = sqrt(emod/dens);
-% cwave: Wave speed
 
 pforce = zeros(totnode, 1);
 % pforce: total peridynamic force acting on a material point
-bforce = zeros(totnode, 1);
-% bforce: body load acting on a material point
+pforceold = zeros(totnode, 1);
+% pforce: total peridynamic force acting on a material point
 acc = zeros(totnode, 1);
 % acc: acceleration of a material point
 
-andisp = zeros(nt, 1);
-% andisp: analytical displacements for results
-pddisp = zeros(nt, 1);
-% pddisp: peridynamic displacements for results
-pdtime = zeros(nt, 1);
-% pdtime: time array for results
+velhalf = zeros(totnode, 1);
+velhalfold = zeros(totnode, 1);
+% vel: velocity of a material point
 
+coord_disp_pd_nt = zeros(ndivx, 3);
+% Peridynamic displacement and Analytical displacement of all points at time step of nt
+center_node = zeros(nt, 2);
+% Peridynamic displacement at center node of all time step.
+cn = 0.0;
+cn1 = 0.0;
+cn2 = 0.0;
 for tt = 1:nt
     fprintf("%d/%d\n", tt, nt);
-    ctime = tt * dt;
 
-    for i = 1:ndivx
+    for i = 1:totnode
         pforce(i, 1) = 0.0;
         for j = 1:numfam(i, 1)
             cnode = nodefam(pointfam(i, 1)+j-1, 1);
@@ -187,29 +198,61 @@ for tt = 1:nt
         end
     end
 
+    % Adaptive dynamic relaxation ⬇⬇⬇
+
     for i = 1:ndivx
-        acc(i, 1) = (pforce(i, 1) + bforce(i, 1)) / dens;
-        % Calculate the acceleration of material point i
-        vel(i, 1) = vel(i, 1) + acc(i, 1) * dt;
-        % Calculate the displacement of material point i
-        % by integrating the velocity of material point i
-        disp(i, 1) = disp(i, 1) + vel(i, 1) * dt;
+        if (velhalfold(i, 1) ~= 0.0)
+            cn1 = cn1 - disp(i, 1) * disp(i, 1) * (pforce(i, 1) / massvec(i, 1) - pforceold(i, 1) / massvec(i, 1)) / (dt * velhalfold(i, 1));
+        end
+        cn2 = cn2 + disp(i, 1) * disp(i, 1);
     end
 
-    % Store the displacement and time information for the material point at the center
-    % of the bar for results
-    pddisp(tt, 1) = disp(500, 1);
-    pdtime(tt, 1) = ctime;
-    % Calculate the analytical displacement solution of the material point at the center
-    % of the bar
-    for nrao = 0:ntotrao
-        andisp(tt, 1) = andisp(tt, 1) + ((-1.0)^(nrao)) / ((2.0 * nrao + 1.0)^2) * sin((2.0 * nrao + 1.0)*pi*coord(500, 1)/2.0) * cos((2.0 * nrao + 1.0)*pi*cwave*ctime/2.0);
+    if (cn2 ~= 0.0)
+        if ((cn1 / cn2) > 0.0)
+            cn = 2.0 * sqrt(cn1/cn2);
+        else
+            cn = 0.0;
+        end
+    else
+        cn = 0.0;
     end
-    andisp(tt, 1) = 8.0 * 0.001 * 1.0 / (pi^2) * andisp(tt, 1);
+
+    if (cn > 2.0)
+        cn = 1.9;
+    end
+
+    for i = 1:ndivx
+        % Integrate acceleration over time.
+        if (tt == 1)
+            velhalf(i, 1) = 1.0 * dt / massvec(i, 1) * (pforce(i, 1) + bforce(i, 1)) / 2.0;
+        else
+            velhalf(i, 1) = ((2.0 - cn * dt) * velhalfold(i, 1) + 2.0 * dt / massvec(i, 1) * (pforce(i, 1) + bforce(i, 1))) / (2.0 + cn * dt);
+        end
+
+        vel(i, 1) = 0.5 * (velhalfold(i, 1) + velhalf(i, 1));
+        disp(i, 1) = disp(i, 1) + velhalf(i, 1) * dt;
+
+        velhalfold(i, 1) = velhalf(i, 1);
+        pforceold(i, 1) = pforce(i, 1);
+    end
+
+    % Adaptive dynamic relaxation ⬆⬆⬆
+
+    if (tt == nt)
+        for i = 1:ndivx
+            coord_disp_pd_nt(i, 1:3) = [coord(i, 1), disp(i, 1), 0.001d0 * coord(i, 1)];
+        end
+    end
+
+    center_node(tt, 1:2) = [tt, disp(500, 1)];
 end
 
 %% plot
-plot(pdtime(1:nt, 1), pddisp(1:nt, 1), pdtime(1:nt, 1), andisp(1:nt, 1));
-legend("Peridynamics", "Analytical")
-xlabel("Tims(s)");
-ylabel("Displacement(m)")
+subplot(121)
+plot(center_node(:, 1), center_node(:, 2));
+subplot(122)
+hold on;
+plot(coord_disp_pd_nt(:, 1), coord_disp_pd_nt(:, 2));
+plot(coord_disp_pd_nt(:, 1), coord_disp_pd_nt(:, 3));
+legend("Peridynamics", "Analytical");
+hold off;
