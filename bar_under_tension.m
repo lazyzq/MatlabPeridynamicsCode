@@ -240,7 +240,7 @@ for tt = 1:nt
 
     if (tt == nt)
         for i = 1:ndivx
-            coord_disp_pd_nt(i, 1:3) = [coord(i, 1), disp(i, 1), 0.001d0 * coord(i, 1)];
+            coord_disp_pd_nt(i, 1:3) = [coord(i, 1), disp(i, 1), 0.001 * coord(i, 1)];
         end
     end
 
