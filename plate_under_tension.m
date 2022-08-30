@@ -39,7 +39,6 @@ end
 delta = 3.015 * dx;
 % delta: Horizon
 
-
 pointfam = int32(zeros(totnode, 1));
 % pointfam: index array to find the family members in nodefam array
 numfam = int32(zeros(totnode, 1));
@@ -81,7 +80,6 @@ emod = 200.0e9;
 % emod: Elastic modulus
 bc = 9.0 * emod / (pi * thick * (delta^3));
 % bc: Bond constant
-
 
 disp = zeros(totnode, 2);
 % disp: displacement of a material point
@@ -202,7 +200,6 @@ dtemp = 0.0;
 pratio = 1.0 / 3.0;
 % pratio: Poisson's ratio
 
-
 pforce = zeros(totnode, 2);
 % pforce: total peridynamic force acting on a material point
 pforceold = zeros(totnode, 2);
@@ -216,12 +213,12 @@ velhalfold = zeros(totnode, 2);
 
 coord_disp_pd_nt = zeros(ndivx*ndivy, 4);
 % Peridynamic displacement and Analytical displacement of all points at time step of nt
-% center_node = zeros(nt, 2);
-% % Peridynamic displacement at center node of all time step.
 horiCnt = 0;
 horizontal_disps = zeros(ndivx, 6);
+% Peridynamic displacement and Analytical displacement of points at y = 0;
 vertiCnt = 0;
 vertical_disps = zeros(ndivy, 6);
+% Peridynamic displacement and Analytical displacement of points at x = 0;
 steady_check = zeros(nt, 3);
 
 cn = 0.0;
@@ -262,8 +259,7 @@ for tt = 1:nt
             scr = 1.0 / (((cos(theta))^2.0 / (scx)^2.0) + ((sin(theta))^2.0 / (scy)^2.0));
             scr = sqrt(scr);
 
-            % Calculation of the peridynamic force in x direction
-            % acting on a material point i due to a material point j
+            % Calculation of the peridynamic force in x direction acting on a material point i due to a material point j
             dforce1 = bc * ((nlength - idist) / idist - (alpha * dtemp)) * vol * scr * fac * (coord(cnode, 1) + disp(cnode, 1) - coord(i, 1) - disp(i, 1)) / nlength;
             dforce2 = bc * ((nlength - idist) / idist - (alpha * dtemp)) * vol * scr * fac * (coord(cnode, 2) + disp(cnode, 2) - coord(i, 2) - disp(i, 2)) / nlength;
 
