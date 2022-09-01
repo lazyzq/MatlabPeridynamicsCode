@@ -333,7 +333,7 @@ for tt = 1:nt
 
     % Adaptive dynamic relaxation ⬇⬇⬇
 
-    for i = 1:totnode
+    for i = 1:totint
         if (velhalfold(i, 1) ~= 0.0)
             cn1 = cn1 - disp(i, 1) * disp(i, 1) * (pforce(i, 1) / massvec(i, 1) - pforceold(i, 1) / massvec(i, 1)) / (dt * velhalfold(i, 1));
         end
