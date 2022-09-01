@@ -207,8 +207,8 @@ massvec = zeros(totnode, 2);
 
 for i = 1:totnode
     % 5 is a safety factor
-    massvec(i, 1) = 0.25 * dt * dt * (pi * (delta)^2 * thick) * bc / dx;%  * 5.0;
-    massvec(i, 2) = 0.25 * dt * dt * (pi * (delta)^2 * thick) * bc / dx;%  * 5.0;
+    massvec(i, 1) = 0.25 * dt * dt * (pi * (delta)^2 * thick) * bc / dx * 1.1;%  * 5.0;
+    massvec(i, 2) = 0.25 * dt * dt * (pi * (delta)^2 * thick) * bc / dx * 1.1;%  * 5.0;
 end
 
 %% Applied loading - Left and Right
@@ -332,7 +332,7 @@ for tt = 1:nt
 
     % Adaptive dynamic relaxation ⬇⬇⬇
 
-    for i = 1:totnode
+    for i = 1:totint
         if (velhalfold(i, 1) ~= 0.0)
             cn1 = cn1 - disp(i, 1) * disp(i, 1) * (pforce(i, 1) / massvec(i, 1) - pforceold(i, 1) / massvec(i, 1)) / (dt * velhalfold(i, 1));
         end
