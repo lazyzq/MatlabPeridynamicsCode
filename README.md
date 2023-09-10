@@ -1,4 +1,4 @@
-# MatlabPeridynamicsCode
+# MatlabPeridynamics Code
 Translation of Fotran codes in book Peridynamic Theory and Its Applications (Erdogan Madenci, Erkan Oterkus) into a MATLAB version.  
 
 Results are as following:
