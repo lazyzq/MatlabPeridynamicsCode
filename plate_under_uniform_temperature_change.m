@@ -15,7 +15,7 @@ dx = length / ndivx;
 % dx: Spacing between material points
 nbnd = 0;
 % nbnd: Number of divisions in the boundary region
-totnode = ndivx * ndivy + nbnd;
+totnode = ndivx * ndivy;
 % totnode: Total number of material points
 
 coord = zeros(totnode, 2);
